@@ -299,6 +299,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelText: {fileID: 1585614129}
   movesText: {fileID: 1575665620}
+  mainCamera: {fileID: 1459260990}
 --- !u!4 &1419249590
 Transform:
   m_ObjectHideFlags: 0

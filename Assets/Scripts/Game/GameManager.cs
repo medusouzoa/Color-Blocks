@@ -10,6 +10,7 @@ namespace Game
 
     public TextMeshProUGUI levelText;
     public TextMeshProUGUI movesText;
+    public Camera mainCamera;
     private int _currentLevel = 1;
     private int _remainingMoves;
 
