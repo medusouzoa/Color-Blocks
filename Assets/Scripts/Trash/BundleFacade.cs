@@ -4,44 +4,61 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
-public class BundleFacade
+namespace Trash
 {
-  public IPromise Instantiate(string key, RuleTile.TilingRuleOutput.Transform parent)
+  public class BundleFacade : MonoBehaviour
   {
-    Promise promise = new();
-    AsyncOperationHandle<GameObject> asyncOperationHandle = Addressables.InstantiateAsync(key);
-    asyncOperationHandle.Completed += handle =>
+    public static BundleFacade Instance { get; private set; }
+
+    private void Awake()
     {
-      if (handle.Status != AsyncOperationStatus.Succeeded)
+      if (Instance == null)
       {
-        promise.Reject(new Exception("Panel Couldn't Created"));
+        Instance = this;
       }
       else
       {
-        promise.Resolve();
+        Destroy(gameObject);
       }
-    };
-    return promise;
-  }
+    }
 
-  public IPromise<GameObject> InstantiateAndReturn(string key, Transform parent)
-  {
-    Promise<GameObject> promise = new();
-
-    // Debug.LogWarning("InstantiateAndReturn>");
-
-    AsyncOperationHandle<GameObject> asyncOperationHandle = Addressables.InstantiateAsync(key, parent);
-    asyncOperationHandle.Completed += handle =>
+    public IPromise Instantiate(string key, RuleTile.TilingRuleOutput.Transform parent)
     {
-      if (handle.Status != AsyncOperationStatus.Succeeded)
+      Promise promise = new();
+      AsyncOperationHandle<GameObject> asyncOperationHandle = Addressables.InstantiateAsync(key);
+      asyncOperationHandle.Completed += handle =>
       {
-        promise.Reject(new Exception("Panel Couldn't Created"));
-      }
-      else
+        if (handle.Status != AsyncOperationStatus.Succeeded)
+        {
+          promise.Reject(new Exception("Panel Couldn't Created"));
+        }
+        else
+        {
+          promise.Resolve();
+        }
+      };
+      return promise;
+    }
+
+    public IPromise<GameObject> InstantiateAndReturn(string key, Transform parent)
+    {
+      Promise<GameObject> promise = new();
+
+      // Debug.LogWarning("InstantiateAndReturn>");
+
+      AsyncOperationHandle<GameObject> asyncOperationHandle = Addressables.InstantiateAsync(key, parent);
+      asyncOperationHandle.Completed += handle =>
       {
-        promise.Resolve(handle.Result);
-      }
-    };
-    return promise;
+        if (handle.Status != AsyncOperationStatus.Succeeded)
+        {
+          promise.Reject(new Exception("Panel Couldn't Created"));
+        }
+        else
+        {
+          promise.Resolve(handle.Result);
+        }
+      };
+      return promise;
+    }
   }
 }

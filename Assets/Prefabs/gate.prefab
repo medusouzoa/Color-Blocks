@@ -12,9 +12,10 @@ GameObject:
   - component: {fileID: 7979342102692124289}
   - component: {fileID: 5285156769131700811}
   - component: {fileID: 5005853211485431847}
+  - component: {fileID: 1283339376437510969}
   m_Layer: 0
   m_Name: gate
-  m_TagString: Untagged
+  m_TagString: Gate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -96,3 +97,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93b40b15d9af40428e07d0441957dcc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!65 &1283339376437510969
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5933591896364876702}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.9904636, y: 0.7092222, z: 1.0000002}
+  m_Center: {x: 0.004768193, y: 0.35461107, z: -2.973227e-15}

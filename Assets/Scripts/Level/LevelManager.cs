@@ -1,16 +1,21 @@
 using System.Collections.Generic;
 using Game;
 using Newtonsoft.Json;
+using Trash;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Level
 {
   public class LevelManager : MonoBehaviour
   {
     public TextAsset[] levelFiles;
-    public GameObject blockPrefab;
+    public GameObject block1Prefab;
+    public GameObject block2Prefab;
     public GameObject exitPrefab;
     private List<Level> _levels;
+    public int colSize { get; set; }
+    public int rowSize { get; set; }
     public static LevelManager Instance { get; private set; }
 
     private void Awake()
@@ -44,23 +49,28 @@ namespace Level
     public void LoadLevel(int index)
     {
       Level level = GetLevel(index);
-
+      rowSize = level.rowCount;
+      Debug.Log("rowSize" + rowSize);
+      colSize = level.colCount;
+      Debug.Log("colSize" + colSize);
+      GridViewManager.Instance.FillGridData();
+      // GridViewManager.Instance.CreateGrids();
+      CameraController.Instance.AdjustCameraSize();
       // Instantiate blocks
       foreach (MovableInfo blockInfo in level.movableInfo)
       {
         Quaternion rotation = DetermineRotation(blockInfo.direction);
-        GameObject blockObject = Instantiate(blockPrefab, new Vector3(blockInfo.col,
-          -blockInfo.row, 0), rotation);
+        GameObject blockObject = InstantiateBlock(blockInfo, rotation);
         Block block = blockObject.GetComponent<Block>();
-        block.InitializeBlock(blockInfo.direction);
-        blockObject.GetComponent<Renderer>().material.color = GetColorFromInt(blockInfo.colors);
+        block.InitializeBlock(blockInfo.direction, GetColorFromInt(blockInfo.colors));
+        GameManager.Instance.AddBlock(block);
       }
 
       // Instantiate exits
       foreach (ExitInfo exitInfo in level.exitInfo)
       {
         // Calculate the adjusted position based on the direction
-        Vector3 exitPosition = new Vector3(exitInfo.col, exitInfo.row, -0.7f);
+        Vector3 exitPosition = new Vector3(exitInfo.col, -exitInfo.row, -0.7f);
         Quaternion exitRotation = Quaternion.identity;
 
         switch (exitInfo.direction)
@@ -71,7 +81,6 @@ namespace Level
             break;
           case 1: // Right
             exitPosition.x = level.colCount;
-            exitPosition.y -= 1;
             exitRotation = Quaternion.Euler(0, -90, -90);
             break;
           case 2: // Down
@@ -80,7 +89,6 @@ namespace Level
             break;
           case 3: // Left
             exitPosition.x = -1;
-            exitPosition.y -= 1;
             exitRotation = Quaternion.Euler(0, -90, -90);
             break;
         }
@@ -89,11 +97,26 @@ namespace Level
         GameObject exitObject = Instantiate(exitPrefab, exitPosition, exitRotation);
         exitObject.GetComponent<Renderer>().material.color = GetColorFromInt(exitInfo.colors);
         Exit exit = exitObject.GetComponent<Exit>();
+        exit.SetColor(GetColorFromInt(exitInfo.colors));
         exit.SetDirection((Exit.Direction)exitInfo.direction);
+        GameManager.Instance.AddExit(exit);
       }
 
-      GameManager.Instance.SetMoveLimit(level.moveLimit);
+      if (level.moveLimit != 0)
+      {
+        GameManager.Instance.SetMoveLimit(level.moveLimit);
+      }
+
       GameManager.Instance.SetLevelNumber(index + 1);
+    }
+
+    private GameObject InstantiateBlock(MovableInfo blockInfo, Quaternion rotation)
+    {
+      // Instantiate the appropriate prefab based on blockInfo.length
+      GameObject blockPrefab = blockInfo.length == 1 ? block1Prefab : block2Prefab;
+      GameObject blockObject = Instantiate(blockPrefab, new Vector3(blockInfo.col, -blockInfo.row, 0), rotation);
+      blockObject.transform.parent = transform.parent; // Set the parent of the instantiated block
+      return blockObject;
     }
 
     private static Quaternion DetermineRotation(ICollection<int> directions)

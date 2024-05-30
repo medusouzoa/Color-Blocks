@@ -1,31 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
+using Level;
 using RSG;
+using Trash;
 using UnityEngine;
 
 public class GridViewManager : MonoBehaviour
 {
   public int x { get; set; }
   public int y { get; set; }
+  public List<List<GridVo>> grids { get; private set; }
+
+  public static GridViewManager Instance { get; private set; }
 
   private void Awake()
   {
-    // CreateGrids();
+    if (Instance == null)
+    {
+      Instance = this;
+    }
+    else
+    {
+      Destroy(gameObject);
+    }
   }
 
-  public void CreateGrids(List<List<GridVo>> gridData, BundleFacade bundleFacade)
+  public void FillGridData()
+  {
+    int col = LevelManager.Instance.colSize;
+    int row = LevelManager.Instance.rowSize;
+    Debug.Log("col in Grid: "+col);
+    grids = new List<List<GridVo>>();
+    for (int i = 0; i < row; i++)
+    {
+      grids.Add(new List<GridVo>());
+      for (int j = 0; j < col; j++)
+      {
+        List<GridVo> gridVos = grids[i];
+        gridVos.Add(new GridVo
+        {
+          x = i,
+          y = j
+        });
+      }
+    }
+  }
+
+  public void CreateGrids()
   {
     List<Func<IPromise>> promises = new();
 
     // Fill promises with functions that instantiate grids
 
-    for (int i = 0; i < gridData.Count; i++)
+    for (int i = 0; i < grids.Count; i++)
     {
-      List<GridVo> gridVos = gridData[i];
+      List<GridVo> gridVos = grids[i];
       for (int j = 0; j < gridVos.Count; j++)
       {
         GridVo gridVo = gridVos[j];
-        promises.Add(() => InstantiateGrid(bundleFacade, gridVo.x, gridVo.y));
+        promises.Add(() => InstantiateGrid(gridVo.x, gridVo.y));
       }
     }
 
@@ -34,9 +67,9 @@ public class GridViewManager : MonoBehaviour
       .Catch(exception => Debug.LogError(exception));
   }
 
-  private IPromise InstantiateGrid(BundleFacade bundleFacade, int i, int j)
+  private IPromise InstantiateGrid(int i, int j)
   {
-    return bundleFacade.InstantiateAndReturn("Grid", transform)
+    return BundleFacade.Instance.InstantiateAndReturn("Grid", transform)
       .Then(result =>
       {
         result.transform.name = $"grid_{i}_{j}";
