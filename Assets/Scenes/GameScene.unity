@@ -151,14 +151,14 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8962264, g: 0.8962264, b: 0.8962264, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -191,7 +191,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -201,7 +201,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
-  m_ShadowAngle: 0
+  m_ShadowAngle: 18
 --- !u!4 &203410342
 Transform:
   m_ObjectHideFlags: 0
@@ -254,6 +254,7 @@ MonoBehaviour:
   block1Prefab: {fileID: 5933591896364876702, guid: 7f3d410b5d9ffbf49b02865dffa17ad6, type: 3}
   block2Prefab: {fileID: 5762113039282128511, guid: 13ab5593dc040294685f4d45bc966324, type: 3}
   exitPrefab: {fileID: 5933591896364876702, guid: 65d33e7c7eb30cd49b28ebd6fb7c5635, type: 3}
+  textureMapping: {fileID: 11400000, guid: 3838344c764cfc94db623de2c37f556e, type: 2}
 --- !u!4 &445491718
 Transform:
   m_ObjectHideFlags: 0

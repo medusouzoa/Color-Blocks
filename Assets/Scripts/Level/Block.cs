@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Level
 {
@@ -15,6 +16,8 @@ namespace Level
     }
 
     public Color blockColor { get; private set; }
+    public Texture colorTexture { get; set; }
+    public int blockLength;
     private List<Direction> _moveDirections;
     private readonly float _moveSpeed = 3.5f;
     private Vector3 _targetPosition;
@@ -25,6 +28,9 @@ namespace Level
     private static bool _swipeLeft, _swipeRight, _swipeUp, _swipeDown;
     private Direction _currentDirection;
 
+    [FormerlySerializedAs("currentPosition")]
+    public Vector3 position;
+
     void Update()
     {
       HandleInput();
@@ -34,7 +40,8 @@ namespace Level
       MoveBlock();
     }
 
-    public void InitializeBlock(List<int> directions, Color color)
+    public void InitializeBlock(List<int> directions, Color color,
+      Texture texture, int length, Vector3 currentPosition)
     {
       _moveDirections = new List<Direction>();
       foreach (int dir in directions)
@@ -43,8 +50,10 @@ namespace Level
       }
 
       blockColor = color;
-      GetComponent<Renderer>().material.color = blockColor;
+      GetComponent<Renderer>().material.mainTexture = texture;
       _targetPosition = transform.position;
+      blockLength = length;
+      position = currentPosition;
     }
 
     private void CalculateSwipeDelta()
@@ -157,12 +166,29 @@ namespace Level
       float halfWidth = blockLocalScale.x / 2;
       float halfHeight = blockLocalScale.y / 2;
 
+      // Calculate the block's bounds based on its length and orientation
+      float widthAdjustment = 0;
+      float heightAdjustment = 0;
+
+      if (_moveDirections.Contains(Direction.Left) || _moveDirections.Contains(Direction.Right))
+      {
+        // Block is horizontal
+        widthAdjustment = (blockLength - 1) * blockLocalScale.x;
+      }
+      else if (_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down))
+      {
+        // Block is vertical
+        heightAdjustment = (blockLength - 1) * blockLocalScale.y;
+      }
+
       Vector3 blockPosition = transform.position;
+
       return worldTouchPos.x > blockPosition.x - halfWidth &&
-             worldTouchPos.x < blockPosition.x + halfWidth &&
-             worldTouchPos.y > blockPosition.y - halfHeight &&
+             worldTouchPos.x < blockPosition.x + halfWidth + widthAdjustment &&
+             worldTouchPos.y > blockPosition.y - halfHeight - heightAdjustment &&
              worldTouchPos.y < blockPosition.y + halfHeight;
     }
+
 
     private void StartMovement(Direction direction)
     {
@@ -192,31 +218,28 @@ namespace Level
     {
       if (!_isMoving) return;
 
-      transform.position = Vector3.MoveTowards(transform.position,
-        _targetPosition, _moveSpeed * Time.deltaTime);
+      transform.position = Vector3.MoveTowards(transform.position, _targetPosition, _moveSpeed * Time.deltaTime);
 
       if (Vector3.Distance(transform.position, _targetPosition) < 0.1f)
       {
         transform.position = _targetPosition;
+        _isMoving = false;
 
-        if (CheckCollision(_currentDirection))
+        if (!CheckCollision(_currentDirection))
         {
-          _isMoving = false;
           GameManager.Instance.ReduceMove();
-        }
-        else
-        {
-          StartMovement(_currentDirection);
         }
       }
     }
+
 
     private bool CheckCollision(Direction direction)
     {
       Vector3 directionVector = GetDirectionVector(direction);
       RaycastHit hit;
+      float maxDistance = 1;
 
-      if (Physics.Raycast(transform.position, directionVector, out hit, 1.0f))
+      if (Physics.Raycast(transform.position, directionVector, out hit, maxDistance))
       {
         if (hit.collider.CompareTag("Block"))
         {
@@ -249,12 +272,33 @@ namespace Level
 
     private void ReturnToNearestIntegerPosition()
     {
-      Vector3 currentPosition = transform.position;
-      Vector3 nearestPosition = new Vector3(Mathf.Round(currentPosition.x),
-        Mathf.Round(currentPosition.y), currentPosition.z);
+      Vector3 nearestPosition;
+
+      if (_moveDirections.Contains(Direction.Left) || _moveDirections.Contains(Direction.Right))
+      {
+        // Block is horizontal
+        float startX = Mathf.Round(position.x - (blockLength - 1) * 0.5f);
+        float endX = Mathf.Round(position.x + (blockLength - 1) * 0.5f);
+        nearestPosition = new Vector3((startX + endX) * 0.5f, Mathf.Round(position.y), position.z);
+      }
+      else if (_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down))
+      {
+        // Block is vertical
+        float startY = Mathf.Round(position.y + (blockLength - 1) * 0.5f);
+        float endY = Mathf.Round(position.y - (blockLength - 1) * 0.5f);
+        nearestPosition = new Vector3(Mathf.Round(position.x), (startY + endY) * 0.5f, position.z);
+      }
+      else
+      {
+        // Single unit block, simply round to nearest integer position
+        nearestPosition = new Vector3(Mathf.Round(position.x), Mathf.Round(position.y), position.z);
+      }
+
       transform.position = nearestPosition;
+      _targetPosition = nearestPosition; // Ensure the target position is also updated
       Debug.Log("Returning to nearest position: " + nearestPosition);
     }
+
 
     private Vector3 GetDirectionVector(Direction direction)
     {

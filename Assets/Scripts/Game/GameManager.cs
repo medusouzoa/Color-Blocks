@@ -15,9 +15,9 @@ namespace Game
     public Camera mainCamera;
     private int _currentLevel = 1;
     private int _remainingMoves;
-    public List<Block> blocks { get; private set; } = new List<Block>();
-    public List<Exit> exits { get; private set; } = new List<Exit>();
-   
+    public List<Block> blocks { get; private set; }
+    public List<Exit> exits { get; private set; }
+
 
     void Awake()
     {
@@ -28,6 +28,17 @@ namespace Game
       else
       {
         Destroy(gameObject);
+      }
+
+      blocks = new List<Block>();
+      exits = new List<Exit>();
+    }
+
+    private void Update()
+    {
+      if (_remainingMoves == 0)
+      {
+        movesText.text = "";
       }
     }
 
@@ -51,9 +62,19 @@ namespace Game
 
     public void ReduceMove()
     {
-      _remainingMoves--;
-      UpdateUI();
-      CheckGameState();
+      if (_remainingMoves > 0)
+      {
+        _remainingMoves--;
+        UpdateUI();
+        CheckGameState();
+        if (_remainingMoves == 0)
+        {
+          // Handle game over or level restart logic here
+          Debug.Log("No more moves left!");
+        }
+      }
+
+      LevelCompletionCheck();
     }
 
     void CheckGameState()
@@ -64,6 +85,18 @@ namespace Game
         // Handle fail state
       }
 
+      if (blocks.Count == 0)
+      {
+        Debug.Log("Win State: Level Completed");
+        _currentLevel++;
+        blocks.Clear();
+        DestroyAllExits();
+        LevelManager.Instance.LoadLevel(_currentLevel - 1);
+      }
+    }
+
+    void LevelCompletionCheck()
+    {
       if (blocks.Count == 0)
       {
         Debug.Log("Win State: Level Completed");
