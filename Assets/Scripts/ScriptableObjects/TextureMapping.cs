@@ -5,7 +5,8 @@ namespace ScriptableObjects
   public enum Direction
   {
     UpDown,
-    RightLeft
+    RightLeft,
+    None
   }
 
   [CreateAssetMenu(fileName = "TextureMapping", menuName = "ScriptableObjects/TextureMapping", order = 1)]

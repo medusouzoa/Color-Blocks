@@ -3,6 +3,7 @@ using Game;
 using Newtonsoft.Json;
 using ScriptableObjects;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Level
 {
@@ -12,15 +13,19 @@ namespace Level
     public GameObject block1Prefab;
     public GameObject block2Prefab;
     public GameObject exitPrefab;
-    public TextureMapping textureMapping;
-    private List<Level> _levels;
+    public GameObject gridTilePrefab;
+    public TextureMapping textureMappingOne;
+    public TextureMapping textureMappingTwo;
+
+    private Dictionary<int, Level> _levels;
+
     public int colSize { get; set; }
     public int rowSize { get; set; }
     public static LevelManager Instance { get; private set; }
 
     private void Awake()
     {
-      _levels = new List<Level>();
+      _levels = new Dictionary<int, Level>();
       if (Instance == null)
       {
         Instance = this;
@@ -33,83 +38,103 @@ namespace Level
 
     private void Start()
     {
-      LoadLevels();
       LoadLevel(3);
-    }
-
-    private void LoadLevels()
-    {
-      foreach (TextAsset file in levelFiles)
-      {
-        Level level = JsonConvert.DeserializeObject<Level>(file.text);
-        _levels.Add(level);
-      }
     }
 
     public void LoadLevel(int index)
     {
-      Level level = GetLevel(index);
-      rowSize = level.rowCount;
-      Debug.Log("rowSize" + rowSize);
-      colSize = level.colCount;
-      Debug.Log("colSize" + colSize);
-      GridViewManager.Instance.FillGridData();
-      Direction direction = new();
-
-      // GridViewManager.Instance.CreateGrids();
-      CameraController.Instance.AdjustCameraSize();
-      // Instantiate blocks
-      foreach (MovableInfo blockInfo in level.movableInfo)
+      if (!_levels.ContainsKey(index))
       {
-        Quaternion rotation = DetermineRotation(blockInfo.direction);
+        LoadLevelFile(index);
+      }
+
+      Level level = _levels[index];
+      SetGridDimensions(level);
+      GenerateGrid();
+      CameraController.Instance.AdjustCameraSize();
+
+      LoadBlocks(level.movableInfo);
+      LoadExits(level.exitInfo);
+
+      GameManager.Instance.SetMoveLimit(level.moveLimit);
+      GameManager.Instance.SetLevelNumber(index + 1);
+    }
+
+    private void LoadLevelFile(int index)
+    {
+      if (index < 0 || index >= levelFiles.Length)
+      {
+        Debug.LogError($"Invalid level index: {index}");
+        return;
+      }
+
+      Level level = JsonConvert.DeserializeObject<Level>(levelFiles[index].text);
+      _levels[index] = level;
+    }
+
+
+    private void SetGridDimensions(Level level)
+    {
+      rowSize = level.rowCount;
+      colSize = level.colCount;
+      Debug.Log($"rowSize: {rowSize}, colSize: {colSize}");
+      GridViewManager.Instance.FillGridData();
+    }
+
+    private void LoadBlocks(List<MovableInfo> movableInfos)
+    {
+      foreach (MovableInfo blockInfo in movableInfos)
+      {
+        Quaternion rotation = DetermineBlockRotation(blockInfo.direction);
         GameObject blockObject = InstantiateBlock(blockInfo, rotation);
         Block block = blockObject.GetComponent<Block>();
         Vector3 position = new(blockInfo.col, -blockInfo.row, 0);
-        if (blockInfo.direction.Contains(0) && blockInfo.direction.Contains(2))
-        {
-          direction = Direction.UpDown;
-        }
+        Direction direction = GetDirection(blockInfo.direction);
 
-        if (blockInfo.direction.Contains(1) && blockInfo.direction.Contains(3))
-        {
-          direction = Direction.RightLeft;
-        }
-
-        Texture blockTexture = textureMapping.GetTextureForColor(blockInfo.colors, direction);
+        Texture blockTexture = GetBlockTexture(blockInfo, direction);
         block.InitializeBlock(blockInfo.direction, GetColorFromInt(blockInfo.colors),
           blockTexture, blockInfo.length, position);
 
         GameManager.Instance.AddBlock(block);
       }
+    }
 
-      // Instantiate exits
-      foreach (ExitInfo exitInfo in level.exitInfo)
+    private Direction GetDirection(List<int> directions)
+    {
+      if (directions.Contains(0) && directions.Contains(2))
       {
-        // Calculate the adjusted position based on the direction
-        Vector3 exitPosition = new(exitInfo.col, -exitInfo.row, -0.7f);
-        Quaternion exitRotation = Quaternion.identity;
+        return Direction.UpDown;
+      }
 
-        switch (exitInfo.direction)
-        {
-          case 0: // Up
-            exitPosition.y = 1;
-            exitRotation = Quaternion.Euler(90, 0, 0);
-            break;
-          case 1: // Right
-            exitPosition.x = level.colCount;
-            exitRotation = Quaternion.Euler(0, -90, -90);
-            break;
-          case 2: // Down
-            exitPosition.y = -level.rowCount;
-            exitRotation = Quaternion.Euler(90, 0, 0);
-            break;
-          case 3: // Left
-            exitPosition.x = -1;
-            exitRotation = Quaternion.Euler(0, -90, -90);
-            break;
-        }
+      if (directions.Contains(1) && directions.Contains(3))
+      {
+        return Direction.RightLeft;
+      }
 
-        // Instantiate the exit object at the adjusted position with the correct rotation
+      return Direction.None;
+    }
+
+    private Texture GetBlockTexture(MovableInfo blockInfo, Direction direction)
+    {
+      if (blockInfo.length == 1)
+      {
+        return textureMappingOne.GetTextureForColor(blockInfo.colors, direction);
+      }
+      else if (blockInfo.length == 2)
+      {
+        return textureMappingTwo.GetTextureForColor(blockInfo.colors, direction);
+      }
+
+      return null;
+    }
+
+    private void LoadExits(List<ExitInfo> exitInfos)
+    {
+      foreach (ExitInfo exitInfo in exitInfos)
+      {
+        Vector3 exitPosition = CalculateExitPosition(exitInfo);
+        Quaternion exitRotation = CalculateExitRotation(exitInfo.direction);
+
         GameObject exitObject = Instantiate(exitPrefab, exitPosition, exitRotation);
         exitObject.GetComponent<Renderer>().material.color = GetColorFromInt(exitInfo.colors);
         Exit exit = exitObject.GetComponent<Exit>();
@@ -117,14 +142,69 @@ namespace Level
         exit.SetDirection((Exit.Direction)exitInfo.direction);
         GameManager.Instance.AddExit(exit);
       }
+    }
 
-      GameManager.Instance.SetMoveLimit(level.moveLimit);
-      GameManager.Instance.SetLevelNumber(index + 1);
+    private Vector3 CalculateExitPosition(ExitInfo exitInfo)
+    {
+      float x = exitInfo.col;
+      float y = -exitInfo.row;
+      float z = -0.7f;
+
+      switch (exitInfo.direction)
+      {
+        case 0: // Up
+          y = 0.7f;
+          break;
+        case 1: // Right
+          x = colSize - 0.3f;
+          break;
+        case 2: // Down
+          y = -rowSize + 0.3f;
+          break;
+        case 3: // Left
+          x = -0.7f;
+          break;
+      }
+
+      return new Vector3(x, y, z);
+    }
+
+    private Quaternion CalculateExitRotation(int direction)
+    {
+      switch (direction)
+      {
+        case 0: // Up
+          return Quaternion.Euler(90, 0, 0);
+        case 1: // Right
+          return Quaternion.Euler(0, -90, -90);
+        case 2: // Down
+          return Quaternion.Euler(90, 0, 0);
+        case 3: // Left
+          return Quaternion.Euler(0, -90, -90);
+        default:
+          return Quaternion.identity;
+      }
+    }
+
+    private void GenerateGrid()
+    {
+      foreach (Transform child in transform)
+      {
+        Destroy(child.gameObject);
+      }
+
+      for (int row = 0; row < rowSize; row++)
+      {
+        for (int col = 0; col < colSize; col++)
+        {
+          Vector3 position = new(col, -row, 1);
+          Instantiate(gridTilePrefab, position, Quaternion.identity, transform);
+        }
+      }
     }
 
     private GameObject InstantiateBlock(MovableInfo blockInfo, Quaternion rotation)
     {
-      // Instantiate the appropriate prefab based on blockInfo.length
       GameObject blockPrefab = blockInfo.length == 1 ? block1Prefab : block2Prefab;
       GameObject blockObject = Instantiate(blockPrefab,
         new Vector3(blockInfo.col, -blockInfo.row, 0), rotation);
@@ -132,7 +212,7 @@ namespace Level
       return blockObject;
     }
 
-    private static Quaternion DetermineRotation(ICollection<int> directions)
+    private static Quaternion DetermineBlockRotation(ICollection<int> directions)
     {
       if (directions.Contains(0) && directions.Contains(2))
       {
@@ -148,9 +228,13 @@ namespace Level
       }
     }
 
+    // private Level GetLevel(int index)
+    // {
+    //   return _levels[index];
+    // }
     private Level GetLevel(int index)
     {
-      return _levels[index];
+      return _levels.ContainsKey(index) ? _levels[index] : null;
     }
 
     private static Color GetColorFromInt(int color)

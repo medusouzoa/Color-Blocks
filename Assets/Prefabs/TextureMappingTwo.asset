@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47ebfa7eaec64e649a31e95444c64883, type: 3}
+  m_Name: TextureMappingTwo
+  m_EditorClassIdentifier: 
+  colorTexturePairs:
+  - colorValue: 0
+    texture: {fileID: 2800000, guid: 7522770f48157bf4aa8b6fe04e2b3381, type: 3}
+    direction: 1
+  - colorValue: 1
+    texture: {fileID: 2800000, guid: c06cc84338347a445b862843f9122602, type: 3}
+    direction: 1
+  - colorValue: 2
+    texture: {fileID: 2800000, guid: bfebe3fd50b727645a4ebee83d5dbb02, type: 3}
+    direction: 1
+  - colorValue: 3
+    texture: {fileID: 2800000, guid: 69302f1fea5671741b4318d8d8d33318, type: 3}
+    direction: 1
+  - colorValue: 4
+    texture: {fileID: 2800000, guid: ee72588c95202c546ae5d905cdb2018c, type: 3}
+    direction: 1
+  - colorValue: 0
+    texture: {fileID: 2800000, guid: ce6ca36d23d10984b8586e745bdc6ac3, type: 3}
+    direction: 0
+  - colorValue: 1
+    texture: {fileID: 2800000, guid: 149b007dfb9c1ff4a998c4ea4bc500f1, type: 3}
+    direction: 0
+  - colorValue: 2
+    texture: {fileID: 2800000, guid: 4e9b558098ab9d64f80d46cbdec51a32, type: 3}
+    direction: 0
+  - colorValue: 3
+    texture: {fileID: 2800000, guid: 48e760dd42cf8fe42986cadcee645b89, type: 3}
+    direction: 0
+  - colorValue: 4
+    texture: {fileID: 2800000, guid: 9f00ed991ebab194ab75f0d4ba378df5, type: 3}
+    direction: 0

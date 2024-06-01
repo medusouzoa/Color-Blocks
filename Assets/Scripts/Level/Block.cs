@@ -170,12 +170,14 @@ namespace Level
       float widthAdjustment = 0;
       float heightAdjustment = 0;
 
-      if (_moveDirections.Contains(Direction.Left) || _moveDirections.Contains(Direction.Right))
+      if (_moveDirections.Contains(Direction.Left) ||
+          _moveDirections.Contains(Direction.Right))
       {
         // Block is horizontal
         widthAdjustment = (blockLength - 1) * blockLocalScale.x;
       }
-      else if (_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down))
+      else if (_moveDirections.Contains(Direction.Up) ||
+               _moveDirections.Contains(Direction.Down))
       {
         // Block is vertical
         heightAdjustment = (blockLength - 1) * blockLocalScale.y;
@@ -218,85 +220,130 @@ namespace Level
     {
       if (!_isMoving) return;
 
-      transform.position = Vector3.MoveTowards(transform.position, _targetPosition, _moveSpeed * Time.deltaTime);
+      transform.position = Vector3.MoveTowards(transform.position,
+        _targetPosition, _moveSpeed * Time.deltaTime);
 
       if (Vector3.Distance(transform.position, _targetPosition) < 0.1f)
       {
         transform.position = _targetPosition;
-        _isMoving = false;
+        Debug.Log("target Position: " + _targetPosition);
 
-        if (!CheckCollision(_currentDirection))
+        // Check for collision after reaching the target position
+        if (CheckCollision(_currentDirection))
         {
+          _isMoving = false;
           GameManager.Instance.ReduceMove();
+          ReturnToNearestIntegerPosition(); // Ensure block is correctly positioned
+        }
+        else
+        {
+          StartMovement(_currentDirection); // Stop further movement if no collision and position reached
         }
       }
-    }
-
-
-    private bool CheckCollision(Direction direction)
-    {
-      Vector3 directionVector = GetDirectionVector(direction);
-      RaycastHit hit;
-      float maxDistance = 1;
-
-      if (Physics.Raycast(transform.position, directionVector, out hit, maxDistance))
-      {
-        if (hit.collider.CompareTag("Block"))
-        {
-          Debug.Log("Block collision detected");
-          ReturnToNearestIntegerPosition();
-          return true;
-        }
-
-        if (hit.collider.CompareTag("Gate"))
-        {
-          Exit exit = hit.collider.GetComponent<Exit>();
-          if (blockColor == exit.gateColor)
-          {
-            Debug.Log("Gate collision detected, colors match");
-            GameManager.Instance.RemoveBlocks(gameObject.GetComponent<Block>());
-            Destroy(gameObject);
-            return true;
-          }
-          else
-          {
-            Debug.Log("Gate collision detected, colors do not match");
-            ReturnToNearestIntegerPosition();
-            return true;
-          }
-        }
-      }
-
-      return false;
     }
 
     private void ReturnToNearestIntegerPosition()
     {
       Vector3 nearestPosition;
 
-      if (_moveDirections.Contains(Direction.Left) || _moveDirections.Contains(Direction.Right))
+      if ((_moveDirections.Contains(Direction.Left) ||
+           _moveDirections.Contains(Direction.Right)) && blockLength == 2)
       {
         // Block is horizontal
-        float startX = Mathf.Round(position.x - (blockLength - 1) * 0.5f);
-        float endX = Mathf.Round(position.x + (blockLength - 1) * 0.5f);
-        nearestPosition = new Vector3((startX + endX) * 0.5f, Mathf.Round(position.y), position.z);
+        Vector3 start = new Vector3(Mathf.Round(position.x - 0.5f),
+          Mathf.Round(position.y), position.z);
+        Vector3 end = new Vector3(Mathf.Round(transform.position.x + 0.5f),
+          Mathf.Round(transform.position.y), transform.position.z);
+        nearestPosition = (start + end) / 2;
+        position = nearestPosition;
       }
-      else if (_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down))
+      else if ((_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down)) && blockLength == 2)
       {
         // Block is vertical
-        float startY = Mathf.Round(position.y + (blockLength - 1) * 0.5f);
-        float endY = Mathf.Round(position.y - (blockLength - 1) * 0.5f);
-        nearestPosition = new Vector3(Mathf.Round(position.x), (startY + endY) * 0.5f, position.z);
+        Vector3 start = new Vector3(Mathf.Round(position.x), Mathf.Round(position.y + 0.5f),
+          position.z);
+        Vector3 end = new Vector3(Mathf.Round(transform.position.x),
+          Mathf.Round(transform.position.y - 0.5f), transform.position.z);
+        nearestPosition = (start + end) / 2;
+        position = nearestPosition;
       }
       else
       {
         // Single unit block, simply round to nearest integer position
-        nearestPosition = new Vector3(Mathf.Round(position.x), Mathf.Round(position.y), position.z);
+        nearestPosition = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), transform.position.z);
       }
 
       transform.position = nearestPosition;
       _targetPosition = nearestPosition; // Ensure the target position is also updated
       Debug.Log("Returning to nearest position: " + nearestPosition);
+    }
+
+    private bool CheckCollision(Direction direction)
+    {
+      Vector3 directionVector = GetDirectionVector(direction);
+      float maxDistance = 1f; // Adjust as needed
+
+      // Determine the starting points for the raycasts based on the block's direction and length
+      Vector3 start1 = transform.position;
+      Vector3 start2 = transform.position;
+
+      if (blockLength == 2)
+      {
+        if (direction == Direction.Left || direction == Direction.Right)
+        {
+          start1 = transform.position + new Vector3(0.5f, 0, 0); // Left end of the block
+          start2 = transform.position + new Vector3(-0.5f, 0, 0); // Right end of the block
+        }
+        else if (direction == Direction.Up || direction == Direction.Down)
+        {
+          start1 = transform.position + new Vector3(0, 0.5f, 0); // Top end of the block
+          start2 = transform.position + new Vector3(0, -0.5f, 0); // Bottom end of the block
+        }
+      }
+
+      // Cast rays from both starting points
+      bool hitDetected = false;
+      if (Physics.Raycast(start1, directionVector, out RaycastHit hit1, maxDistance))
+      {
+        hitDetected = ProcessRaycastHit(hit1);
+      }
+
+      if (Physics.Raycast(start2, directionVector, out RaycastHit hit2, maxDistance))
+      {
+        hitDetected = ProcessRaycastHit(hit2);
+      }
+
+      return hitDetected;
+    }
+
+    private bool ProcessRaycastHit(RaycastHit hit)
+    {
+      if (hit.collider.CompareTag("Block"))
+      {
+        Debug.Log("Block collision detected");
+        ReturnToNearestIntegerPosition();
+        return true;
+      }
+
+      if (hit.collider.CompareTag("Gate"))
+      {
+        Exit exit = hit.collider.GetComponent<Exit>();
+        if (blockColor == exit.gateColor)
+        {
+          Debug.Log("Gate collision detected, colors match");
+          GameManager.Instance.RemoveBlocks(gameObject.GetComponent<Block>());
+          Destroy(gameObject);
+          return true;
+        }
+        else
+        {
+          Debug.Log("Gate collision detected, colors do not match");
+          ReturnToNearestIntegerPosition();
+          return true;
+        }
+      }
+
+      return false;
     }
 
 

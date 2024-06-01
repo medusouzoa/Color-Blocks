@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47ebfa7eaec64e649a31e95444c64883, type: 3}
-  m_Name: TextureMapping
+  m_Name: TextureMappingOne
   m_EditorClassIdentifier: 
   colorTexturePairs:
   - colorValue: 0
