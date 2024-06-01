@@ -3,7 +3,6 @@ using Game;
 using Newtonsoft.Json;
 using ScriptableObjects;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Level
 {
@@ -16,11 +15,12 @@ namespace Level
     public GameObject gridTilePrefab;
     public TextureMapping textureMappingOne;
     public TextureMapping textureMappingTwo;
+    public Transform parent;
 
     private Dictionary<int, Level> _levels;
 
-    public int colSize { get; set; }
-    public int rowSize { get; set; }
+    public int colSize { get; private set; }
+    public int rowSize { get; private set; }
     public static LevelManager Instance { get; private set; }
 
     private void Awake()
@@ -78,7 +78,6 @@ namespace Level
       rowSize = level.rowCount;
       colSize = level.colCount;
       Debug.Log($"rowSize: {rowSize}, colSize: {colSize}");
-      GridViewManager.Instance.FillGridData();
     }
 
     private void LoadBlocks(List<MovableInfo> movableInfos)
@@ -89,7 +88,7 @@ namespace Level
         GameObject blockObject = InstantiateBlock(blockInfo, rotation);
         Block block = blockObject.GetComponent<Block>();
         Vector3 position = new(blockInfo.col, -blockInfo.row, 0);
-        Direction direction = GetDirection(blockInfo.direction);
+        DoubleDirection direction = GetDirection(blockInfo.direction);
 
         Texture blockTexture = GetBlockTexture(blockInfo, direction);
         block.InitializeBlock(blockInfo.direction, GetColorFromInt(blockInfo.colors),
@@ -99,22 +98,22 @@ namespace Level
       }
     }
 
-    private Direction GetDirection(List<int> directions)
+    private DoubleDirection GetDirection(List<int> directions)
     {
       if (directions.Contains(0) && directions.Contains(2))
       {
-        return Direction.UpDown;
+        return DoubleDirection.UpDown;
       }
 
       if (directions.Contains(1) && directions.Contains(3))
       {
-        return Direction.RightLeft;
+        return DoubleDirection.RightLeft;
       }
 
-      return Direction.None;
+      return DoubleDirection.None;
     }
 
-    private Texture GetBlockTexture(MovableInfo blockInfo, Direction direction)
+    private Texture GetBlockTexture(MovableInfo blockInfo, DoubleDirection direction)
     {
       if (blockInfo.length == 1)
       {
@@ -136,10 +135,11 @@ namespace Level
         Quaternion exitRotation = CalculateExitRotation(exitInfo.direction);
 
         GameObject exitObject = Instantiate(exitPrefab, exitPosition, exitRotation);
+        exitObject.transform.parent = parent.transform;
         exitObject.GetComponent<Renderer>().material.color = GetColorFromInt(exitInfo.colors);
         Exit exit = exitObject.GetComponent<Exit>();
         exit.SetColor(GetColorFromInt(exitInfo.colors));
-        exit.SetDirection((Exit.Direction)exitInfo.direction);
+        exit.SetDirection((Direction)exitInfo.direction);
         GameManager.Instance.AddExit(exit);
       }
     }
@@ -153,16 +153,16 @@ namespace Level
       switch (exitInfo.direction)
       {
         case 0: // Up
-          y = 0.7f;
+          y = 0.75f;
           break;
         case 1: // Right
-          x = colSize - 0.3f;
+          x = colSize - 0.25f;
           break;
         case 2: // Down
-          y = -rowSize + 0.3f;
+          y = -rowSize + 0.25f;
           break;
         case 3: // Left
-          x = -0.7f;
+          x = -0.75f;
           break;
       }
 
@@ -206,11 +206,13 @@ namespace Level
     private GameObject InstantiateBlock(MovableInfo blockInfo, Quaternion rotation)
     {
       GameObject blockPrefab = blockInfo.length == 1 ? block1Prefab : block2Prefab;
+
       GameObject blockObject = Instantiate(blockPrefab,
         new Vector3(blockInfo.col, -blockInfo.row, 0), rotation);
-      blockObject.transform.parent = transform.parent;
+      blockObject.transform.parent = parent.transform;
       return blockObject;
     }
+
 
     private static Quaternion DetermineBlockRotation(ICollection<int> directions)
     {
@@ -218,23 +220,19 @@ namespace Level
       {
         return Quaternion.Euler(0, 90, -90);
       }
-      else if (directions.Contains(1) && directions.Contains(3))
+
+      if (directions.Contains(1) && directions.Contains(3))
       {
         return Quaternion.Euler(-90, 0, 0);
       }
-      else
-      {
-        return Quaternion.identity;
-      }
+
+
+      return Quaternion.identity;
     }
 
-    // private Level GetLevel(int index)
-    // {
-    //   return _levels[index];
-    // }
     private Level GetLevel(int index)
     {
-      return _levels.ContainsKey(index) ? _levels[index] : null;
+      return _levels.TryGetValue(index, out Level level) ? level : null;
     }
 
     private static Color GetColorFromInt(int color)

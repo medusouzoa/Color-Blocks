@@ -1,13 +1,8 @@
-﻿using UnityEngine;
+﻿using Level;
+using UnityEngine;
 
 namespace ScriptableObjects
 {
-  public enum Direction
-  {
-    UpDown,
-    RightLeft,
-    None
-  }
 
   [CreateAssetMenu(fileName = "TextureMapping", menuName = "ScriptableObjects/TextureMapping", order = 1)]
   public class TextureMapping : ScriptableObject
@@ -17,12 +12,12 @@ namespace ScriptableObjects
     {
       public int colorValue;
       public Texture texture;
-      public Direction direction;
+      public DoubleDirection direction;
     }
 
     public ColorTexturePair[] colorTexturePairs;
 
-    public Texture GetTextureForColor(int colorValue, Direction direction)
+    public Texture GetTextureForColor(int colorValue, DoubleDirection direction)
     {
       foreach (ColorTexturePair pair in colorTexturePairs)
       {

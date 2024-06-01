@@ -7,13 +7,6 @@ namespace Level
 {
   public class Block : MonoBehaviour
   {
-    public enum Direction
-    {
-      Up,
-      Right,
-      Down,
-      Left
-    }
 
     public Color blockColor { get; private set; }
     public Texture colorTexture { get; set; }
@@ -30,6 +23,13 @@ namespace Level
 
     [FormerlySerializedAs("currentPosition")]
     public Vector3 position;
+
+    private Rigidbody _rigidbody;
+
+    private void Awake()
+    {
+      _rigidbody = GetComponent<Rigidbody>();
+    }
 
     void Update()
     {
@@ -159,27 +159,25 @@ namespace Level
 
     private bool IsTouchingBlock(Vector2 touchPos)
     {
-      Vector3 worldTouchPos = GameManager.Instance.mainCamera.ScreenToWorldPoint(touchPos);
+      Vector3 worldTouchPos = GameManager.Instance.mainCamera
+        .ScreenToWorldPoint(touchPos);
       worldTouchPos.z = transform.position.z;
 
       Vector3 blockLocalScale = transform.localScale;
       float halfWidth = blockLocalScale.x / 2;
       float halfHeight = blockLocalScale.y / 2;
 
-      // Calculate the block's bounds based on its length and orientation
       float widthAdjustment = 0;
       float heightAdjustment = 0;
 
       if (_moveDirections.Contains(Direction.Left) ||
           _moveDirections.Contains(Direction.Right))
       {
-        // Block is horizontal
         widthAdjustment = (blockLength - 1) * blockLocalScale.x;
       }
       else if (_moveDirections.Contains(Direction.Up) ||
                _moveDirections.Contains(Direction.Down))
       {
-        // Block is vertical
         heightAdjustment = (blockLength - 1) * blockLocalScale.y;
       }
 
@@ -191,11 +189,8 @@ namespace Level
              worldTouchPos.y < blockPosition.y + halfHeight;
     }
 
-
     private void StartMovement(Direction direction)
     {
-      if (CheckCollision(direction)) return;
-
       _currentDirection = direction;
       _isMoving = true;
 
@@ -227,18 +222,7 @@ namespace Level
       {
         transform.position = _targetPosition;
         Debug.Log("target Position: " + _targetPosition);
-
-        // Check for collision after reaching the target position
-        if (CheckCollision(_currentDirection))
-        {
-          _isMoving = false;
-          GameManager.Instance.ReduceMove();
-          ReturnToNearestIntegerPosition(); // Ensure block is correctly positioned
-        }
-        else
-        {
-          StartMovement(_currentDirection); // Stop further movement if no collision and position reached
-        }
+        StartMovement(_currentDirection);
       }
     }
 
@@ -246,106 +230,42 @@ namespace Level
     {
       Vector3 nearestPosition;
 
-      if ((_moveDirections.Contains(Direction.Left) ||
-           _moveDirections.Contains(Direction.Right)) && blockLength == 2)
-      {
-        // Block is horizontal
-        Vector3 start = new Vector3(Mathf.Round(position.x - 0.5f),
-          Mathf.Round(position.y), position.z);
-        Vector3 end = new Vector3(Mathf.Round(transform.position.x + 0.5f),
-          Mathf.Round(transform.position.y), transform.position.z);
-        nearestPosition = (start + end) / 2;
-        position = nearestPosition;
-      }
-      else if ((_moveDirections.Contains(Direction.Up) || _moveDirections.Contains(Direction.Down)) && blockLength == 2)
-      {
-        // Block is vertical
-        Vector3 start = new Vector3(Mathf.Round(position.x), Mathf.Round(position.y + 0.5f),
-          position.z);
-        Vector3 end = new Vector3(Mathf.Round(transform.position.x),
-          Mathf.Round(transform.position.y - 0.5f), transform.position.z);
-        nearestPosition = (start + end) / 2;
-        position = nearestPosition;
-      }
-      else
-      {
-        // Single unit block, simply round to nearest integer position
-        nearestPosition = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), transform.position.z);
-      }
-
-      transform.position = nearestPosition;
-      _targetPosition = nearestPosition; // Ensure the target position is also updated
-      Debug.Log("Returning to nearest position: " + nearestPosition);
-    }
-
-    private bool CheckCollision(Direction direction)
-    {
-      Vector3 directionVector = GetDirectionVector(direction);
-      float maxDistance = 1f; // Adjust as needed
-
-      // Determine the starting points for the raycasts based on the block's direction and length
-      Vector3 start1 = transform.position;
-      Vector3 start2 = transform.position;
-
       if (blockLength == 2)
       {
-        if (direction == Direction.Left || direction == Direction.Right)
+        if (_moveDirections.Contains(Direction.Left) ||
+            _moveDirections.Contains(Direction.Right))
         {
-          start1 = transform.position + new Vector3(0.5f, 0, 0); // Left end of the block
-          start2 = transform.position + new Vector3(-0.5f, 0, 0); // Right end of the block
+          float xStart = Mathf.Round(transform.position.x);
+          Debug.Log("xStart: " + xStart);
+          float xEnd = Mathf.Round(transform.position.x);
+          Debug.Log("xEnd: " + xEnd);
+          float y = Mathf.Round(transform.position.y);
+          nearestPosition = new Vector3((xStart + xEnd) / 2, y, transform.position.z);
         }
-        else if (direction == Direction.Up || direction == Direction.Down)
+        else if (_moveDirections.Contains(Direction.Up) ||
+                 _moveDirections.Contains(Direction.Down))
         {
-          start1 = transform.position + new Vector3(0, 0.5f, 0); // Top end of the block
-          start2 = transform.position + new Vector3(0, -0.5f, 0); // Bottom end of the block
-        }
-      }
-
-      // Cast rays from both starting points
-      bool hitDetected = false;
-      if (Physics.Raycast(start1, directionVector, out RaycastHit hit1, maxDistance))
-      {
-        hitDetected = ProcessRaycastHit(hit1);
-      }
-
-      if (Physics.Raycast(start2, directionVector, out RaycastHit hit2, maxDistance))
-      {
-        hitDetected = ProcessRaycastHit(hit2);
-      }
-
-      return hitDetected;
-    }
-
-    private bool ProcessRaycastHit(RaycastHit hit)
-    {
-      if (hit.collider.CompareTag("Block"))
-      {
-        Debug.Log("Block collision detected");
-        ReturnToNearestIntegerPosition();
-        return true;
-      }
-
-      if (hit.collider.CompareTag("Gate"))
-      {
-        Exit exit = hit.collider.GetComponent<Exit>();
-        if (blockColor == exit.gateColor)
-        {
-          Debug.Log("Gate collision detected, colors match");
-          GameManager.Instance.RemoveBlocks(gameObject.GetComponent<Block>());
-          Destroy(gameObject);
-          return true;
+          float yStart = Mathf.Round(transform.position.y);
+          float yEnd = Mathf.Round(transform.position.y);
+          float x = Mathf.Round(transform.position.x);
+          nearestPosition = new Vector3(x, (yStart + yEnd) / 2, transform.position.z);
         }
         else
         {
-          Debug.Log("Gate collision detected, colors do not match");
-          ReturnToNearestIntegerPosition();
-          return true;
+          nearestPosition = new Vector3(Mathf.Round(transform.position.x),
+            Mathf.Round(transform.position.y), transform.position.z);
         }
       }
+      else
+      {
+        nearestPosition = new Vector3(Mathf.Round(transform.position.x),
+          Mathf.Round(transform.position.y), transform.position.z);
+      }
 
-      return false;
+      transform.position = nearestPosition;
+      _targetPosition = nearestPosition;
+      Debug.Log("Returning to nearest position: " + nearestPosition);
     }
-
 
     private Vector3 GetDirectionVector(Direction direction)
     {
@@ -373,6 +293,34 @@ namespace Level
     private void ResetFlags()
     {
       _swipeLeft = _swipeRight = _swipeUp = _swipeDown = false;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+      Debug.Log($"Collision detected with: {other.gameObject.name}");
+
+      if (other.CompareTag("Block"))
+      {
+        Debug.Log("Trigger collision with another block");
+        _isMoving = false;
+        ReturnToNearestIntegerPosition();
+      }
+      else if (other.CompareTag("Gate"))
+      {
+        Exit exit = other.GetComponent<Exit>();
+        if (blockColor == exit.gateColor)
+        {
+          Debug.Log("Trigger collision with matching gate");
+          GameManager.Instance.RemoveBlocks(this);
+          Destroy(gameObject);
+        }
+        else
+        {
+          Debug.Log("Trigger collision with non-matching gate");
+          _isMoving = false;
+          ReturnToNearestIntegerPosition();
+        }
+      }
     }
   }
 }
