@@ -7,7 +7,6 @@ namespace Level
 {
   public class Block : MonoBehaviour
   {
-
     public Color blockColor { get; private set; }
     public Texture colorTexture { get; set; }
     public int blockLength;
@@ -304,6 +303,7 @@ namespace Level
         Debug.Log("Trigger collision with another block");
         _isMoving = false;
         ReturnToNearestIntegerPosition();
+        GameManager.Instance.ReduceMove();
       }
       else if (other.CompareTag("Gate"))
       {
@@ -312,6 +312,7 @@ namespace Level
         {
           Debug.Log("Trigger collision with matching gate");
           GameManager.Instance.RemoveBlocks(this);
+          GameManager.Instance.ReduceMove();
           Destroy(gameObject);
         }
         else
@@ -319,6 +320,7 @@ namespace Level
           Debug.Log("Trigger collision with non-matching gate");
           _isMoving = false;
           ReturnToNearestIntegerPosition();
+          GameManager.Instance.ReduceMove();
         }
       }
     }

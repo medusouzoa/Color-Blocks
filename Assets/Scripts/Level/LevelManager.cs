@@ -38,7 +38,7 @@ namespace Level
 
     private void Start()
     {
-      LoadLevel(3);
+      LoadLevel(0);
     }
 
     public void LoadLevel(int index)
@@ -198,7 +198,7 @@ namespace Level
         for (int col = 0; col < colSize; col++)
         {
           Vector3 position = new(col, -row, 1);
-          Instantiate(gridTilePrefab, position, Quaternion.identity, transform);
+          Instantiate(gridTilePrefab, position, Quaternion.identity, parent.transform);
         }
       }
     }
@@ -229,7 +229,13 @@ namespace Level
 
       return Quaternion.identity;
     }
-
+    public void ClearAllChildObjects()
+    {
+      foreach (Transform child in parent)
+      {
+        Destroy(child.gameObject);
+      }
+    }
     private Level GetLevel(int index)
     {
       return _levels.TryGetValue(index, out Level level) ? level : null;

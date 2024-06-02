@@ -10,11 +10,11 @@ namespace Game
   {
     public static GameManager Instance { get; private set; }
 
-    public TextMeshProUGUI levelText;
-    public TextMeshProUGUI movesText;
+
     public Camera mainCamera;
     private int _currentLevel = 1;
     private int _remainingMoves;
+    public bool isGameOver;
     public List<Block> blocks { get; private set; }
     public List<Exit> exits { get; private set; }
 
@@ -34,42 +34,53 @@ namespace Game
       exits = new List<Exit>();
     }
 
+    private void Start()
+    {
+      isGameOver = false;
+    }
+
     private void Update()
     {
       if (_remainingMoves == 0)
       {
-        movesText.text = "";
+        UIController.instance.UpdateMoveText("");
       }
+    }
+
+    public void ReplayLevel()
+    {
+      UIController.instance.OnReplayLevel();
+      LevelManager.Instance.LoadLevel(_currentLevel - 1);
     }
 
     public void SetMoveLimit(int moveLimit)
     {
       _remainingMoves = moveLimit;
-      UpdateUI();
+      UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
     }
 
     public void SetLevelNumber(int levelNumber)
     {
       _currentLevel = levelNumber;
-      UpdateUI();
+      UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
     }
 
-    void UpdateUI()
-    {
-      levelText.text = "Level: " + _currentLevel;
-      movesText.text = "Moves: " + _remainingMoves;
-    }
 
     public void ReduceMove()
     {
       if (_remainingMoves > 0)
       {
         _remainingMoves--;
-        UpdateUI();
+        UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
         CheckGameState();
         if (_remainingMoves == 0)
         {
+          isGameOver = true;
           // Handle game over or level restart logic here
+          LevelManager.Instance.ClearAllChildObjects();
+          DestroyAllBlocks();
+          DestroyAllExits();
+          UIController.instance.OnOpenGameOverPanel();
           Debug.Log("No more moves left!");
         }
       }
@@ -81,6 +92,7 @@ namespace Game
     {
       if (_remainingMoves <= 0)
       {
+        isGameOver = true;
         Debug.Log("Fail State: Out of Moves");
         // Handle fail state
       }
@@ -97,7 +109,7 @@ namespace Game
 
     void LevelCompletionCheck()
     {
-      if (blocks.Count == 0)
+      if (blocks.Count == 0 && !isGameOver)
       {
         Debug.Log("Win State: Level Completed");
         _currentLevel++;
@@ -133,6 +145,19 @@ namespace Game
       }
 
       exits.Clear();
+    }
+
+    public void DestroyAllBlocks()
+    {
+      foreach (Block block in blocks)
+      {
+        if (block != null)
+        {
+          Destroy(block.gameObject);
+        }
+      }
+
+      blocks.Clear();
     }
   }
 }
