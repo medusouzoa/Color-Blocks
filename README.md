@@ -46,3 +46,7 @@ Levels are defined in JSON files included in the project. Each level file contai
 
 ## Conclusion
 This project aims to develop a functional and extensible gameplay scene for Color Blocks 3D, focusing on the core mechanics and basic UI elements. Follow the guidelines and requirements to ensure a complete and well-structured implementation.
+
+## Screenshot
+
+![ss](https://github.com/medusouzoa/Color-Blocks/assets/73018878/591efd88-8107-480f-8a3a-10d25eb7fdd1)
