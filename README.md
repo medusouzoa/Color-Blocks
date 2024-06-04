@@ -1,4 +1,4 @@
-# Color Blocks 3D
+# Color Blocks 3D Prototype
 
 Color Blocks 3D is a puzzle game where players need to move colored blocks to matching gates to complete levels. This project implements the core gameplay mechanics using Unity.
 
