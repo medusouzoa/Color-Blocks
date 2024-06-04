@@ -10,9 +10,9 @@ namespace UI
       SceneManager.LoadScene("Scenes/GameScene");
     }
 
-    public void QuitGame()
+    public void ReturnToMainMenu()
     {
-      Application.Quit();
+      SceneManager.LoadScene("Scenes/MainMenuScene");
     }
   }
 }

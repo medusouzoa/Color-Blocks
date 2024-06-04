@@ -47,6 +47,7 @@ namespace Core
 
     public void LoadLevel(int index)
     {
+      // load a specific level by index
       if (!_levels.ContainsKey(index))
       {
         LoadLevelFile(index);
@@ -122,16 +123,12 @@ namespace Core
 
     private Texture GetBlockTexture(MovableInfo blockInfo, DoubleDirection direction)
     {
-      if (blockInfo.length == 1)
+      return blockInfo.length switch
       {
-        return textureMappingOne.GetTextureForColor(blockInfo.colors, direction);
-      }
-      else if (blockInfo.length == 2)
-      {
-        return textureMappingTwo.GetTextureForColor(blockInfo.colors, direction);
-      }
-
-      return null;
+        1 => textureMappingOne.GetTextureForColor(blockInfo.colors, direction),
+        2 => textureMappingTwo.GetTextureForColor(blockInfo.colors, direction),
+        _ => null
+      };
     }
 
     private void LoadExits(List<ExitInfo> exitInfos)

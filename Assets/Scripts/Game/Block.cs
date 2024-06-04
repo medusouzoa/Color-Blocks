@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Core;
 using Enum;
@@ -8,7 +7,6 @@ namespace Game
 {
   public class Block : MonoBehaviour
   {
-    public GameObject explosionPrefab;
     private Rigidbody _rigidbody;
 
     public int blockLength;
@@ -46,7 +44,7 @@ namespace Game
       _previousPosition = transform.position;
     }
 
-    void Update()
+    private void Update()
     {
       HandleInput();
       CalculateSwipeDelta();
@@ -76,6 +74,7 @@ namespace Game
 
     private void CalculateSwipeDelta()
     {
+      // Calculate swipe delta based on touch/mouse position
       _swipeDelta = Vector2.zero;
 
       if (_isDragging)
@@ -89,6 +88,7 @@ namespace Game
 
     private void HandleSwipeInputs()
     {
+      // Handle swipe inputs to initiate movement in allowed directions
       if (_isMoving || _selectedBlock != this) return;
 
       if (_swipeUp && _moveDirections.Contains(Direction.Up))
@@ -137,6 +137,7 @@ namespace Game
 
     private void HandleInput()
     {
+      // Handle touch/mouse input for dragging and selecting blocks
       ResetFlags();
 
       if (Input.GetMouseButtonDown(0))
@@ -177,6 +178,7 @@ namespace Game
 
     private bool IsTouchingBlock(Vector2 touchPos)
     {
+      // Check if a touch position intersects with the block's collider
       Vector3 worldTouchPos = GameManager.Instance.mainCamera
         .ScreenToWorldPoint(touchPos);
       worldTouchPos.z = transform.position.z;
@@ -209,6 +211,7 @@ namespace Game
 
     private void StartMovement(Direction direction)
     {
+      // Initiate movement in a specific direction
       _currentDirection = direction;
 
       switch (direction)
@@ -235,6 +238,7 @@ namespace Game
 
     private void MoveBlock()
     {
+      // Move the block towards the target position
       if (!_isMoving) return;
       _currentPosition = transform.position;
       transform.position = Vector3.MoveTowards(transform.position,
@@ -243,15 +247,51 @@ namespace Game
       if (Vector3.Distance(transform.position, _targetPosition) < 0.1f)
       {
         transform.position = _targetPosition;
-        Debug.Log("target Position: " + _targetPosition);
-
-
         StartMovement(_currentDirection);
+      }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+      // Handle collision with other objects
+      if (other.CompareTag("Block"))
+      {
+        _isMoving = false;
+        ReturnToNearestIntegerPosition();
+        if (_nearestPosition != _previousPosition)
+        {
+          GameManager.Instance.ReduceMove();
+        }
+      }
+      else if (other.CompareTag("Gate"))
+      {
+        Exit exit = other.GetComponent<Exit>();
+        if (blockColor == exit.gateColor)
+        {
+          ReturnToNearestIntegerPosition();
+          GameManager.Instance.RemoveBlocks(this);
+          if (_nearestPosition != _previousPosition)
+          {
+            GameManager.Instance.ReduceMove();
+          }
+
+          Destroy(gameObject);
+        }
+        else
+        {
+          _isMoving = false;
+          ReturnToNearestIntegerPosition();
+          if (_nearestPosition != _previousPosition)
+          {
+            GameManager.Instance.ReduceMove();
+          }
+        }
       }
     }
 
     private void ReturnToNearestIntegerPosition()
     {
+      // Calculate and move the block to the nearest integer position (x, y, z)
       if (blockLength == 2)
       {
         if (_moveDirections.Contains(Direction.Left) ||
@@ -290,59 +330,6 @@ namespace Game
       Debug.Log("Returning to nearest position: " + _nearestPosition);
     }
 
-    private Vector3 GetDirectionVector(Direction direction)
-    {
-      switch (direction)
-      {
-        case Direction.Up:
-          return Vector3.up;
-        case Direction.Right:
-          return Vector3.right;
-        case Direction.Down:
-          return Vector3.down;
-        case Direction.Left:
-          return Vector3.left;
-        default:
-          return Vector3.zero;
-      }
-    }
-
-    private IEnumerable TriggerExplosionCoroutine(Direction collisionDirection)
-    {
-      if (explosionPrefab != null)
-      {
-        GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
-        ParticleSystem ps = explosion.GetComponent<ParticleSystem>();
-        if (ps != null)
-        {
-          // Set the start color of the particle system to the block color
-          var mainModule = ps.main;
-          mainModule.startColor = blockColor;
-
-          // Rotate the particle system based on the collision direction
-          switch (collisionDirection)
-          {
-            case Direction.Up:
-              explosion.transform.rotation = Quaternion.Euler(0, 0, 0);
-              break;
-            case Direction.Right:
-              explosion.transform.rotation = Quaternion.Euler(0, 0, 90);
-              break;
-            case Direction.Down:
-              explosion.transform.rotation = Quaternion.Euler(0, 0, 180);
-              break;
-            case Direction.Left:
-              explosion.transform.rotation = Quaternion.Euler(0, 0, -90);
-              break;
-          }
-
-          ps.Play();
-          yield return new WaitForSeconds(ps.main.duration); // Wait for particle duration
-          Destroy(explosion);
-        }
-      }
-    }
-
     private void Reset()
     {
       _startTouch = _swipeDelta = Vector2.zero;
@@ -352,66 +339,6 @@ namespace Game
     private void ResetFlags()
     {
       _swipeLeft = _swipeRight = _swipeUp = _swipeDown = false;
-    }
-
-    private void PlayExplosionAndWaitForFinish(Direction collisionDirection)
-    {
-      if (explosionPrefab != null)
-      {
-        GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
-        ParticleSystem ps = explosion.GetComponent<ParticleSystem>();
-        if (ps != null)
-        {
-          // ... existing code to set color and rotation ...
-
-          ps.Play();
-          Destroy(explosion);
-        }
-      }
-    }
-
-
-    private void OnTriggerEnter(Collider other)
-    {
-      Debug.Log($"Collision detected with: {other.gameObject.name}");
-
-      if (other.CompareTag("Block"))
-      {
-        Debug.Log("Trigger collision with another block");
-        _isMoving = false;
-        ReturnToNearestIntegerPosition();
-        Debug.Log("previous Position: " + _previousPosition);
-        if (_nearestPosition != _previousPosition)
-        {
-          GameManager.Instance.ReduceMove();
-        }
-      }
-      else if (other.CompareTag("Gate"))
-      {
-        Exit exit = other.GetComponent<Exit>();
-        if (blockColor == exit.gateColor)
-        {
-          // TriggerExplosion();
-          ReturnToNearestIntegerPosition();
-          Debug.Log("previous Position: " + _previousPosition);
-          GameManager.Instance.RemoveBlocks(this);
-          if (_nearestPosition != _previousPosition)
-          {
-            GameManager.Instance.ReduceMove();
-          }
-
-          Destroy(gameObject);
-        }
-        else
-        {
-          _isMoving = false;
-          ReturnToNearestIntegerPosition();
-          if (_nearestPosition != _previousPosition)
-          {
-            GameManager.Instance.ReduceMove();
-          }
-        }
-      }
     }
   }
 }

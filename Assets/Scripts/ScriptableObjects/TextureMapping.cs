@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Enum;
 using UnityEngine;
 
@@ -19,15 +20,11 @@ namespace ScriptableObjects
 
     public Texture GetTextureForColor(int colorValue, DoubleDirection direction)
     {
-      foreach (ColorTexturePair pair in colorTexturePairs)
-      {
-        if (pair.colorValue == colorValue && pair.direction == direction)
-        {
-          return pair.texture;
-        }
-      }
-
-      return null;
+      return (from pair in colorTexturePairs
+        where
+          pair.colorValue == colorValue && pair.direction == direction
+        select
+          pair.texture).FirstOrDefault();
     }
   }
 }

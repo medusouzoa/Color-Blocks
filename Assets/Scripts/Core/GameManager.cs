@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Game;
 using UI;
 using UnityEngine;
@@ -15,11 +16,11 @@ namespace Core
     private int _remainingMoves;
     public bool isGameOver;
     private int _levelCount;
-    public List<Block> blocks { get; private set; }
-    public List<Exit> exits { get; private set; }
+    private List<Block> blocks { get; set; }
+    private List<Exit> exits { get; set; }
 
 
-    void Awake()
+    private void Awake()
     {
       if (Instance == null)
       {
@@ -92,33 +93,31 @@ namespace Core
 
     public void CheckGameState()
     {
-      if (blocks.Count == 0)
-      {
-        Debug.Log("Win State: Level Completed");
-        blocks.Clear();
-        DestroyAllExits();
-        LevelCompletionCheck();
-      }
+      // Public method to check the current game state (win or lose)
+      if (blocks.Count != 0) return;
+      Debug.Log("Win State: Level Completed");
+      blocks.Clear();
+      DestroyAllExits();
+      LevelCompletionCheck();
     }
 
-    void LevelCompletionCheck()
+    private void LevelCompletionCheck()
     {
-      if (blocks.Count == 0 && !isGameOver)
+      // handle level completion logic
+      if (blocks.Count != 0 || isGameOver) return;
+      Debug.Log("Win State: Level Completed");
+      _currentLevel++;
+      blocks.Clear();
+      DestroyAllExits();
+      LevelManager.Instance.ClearAllChildObjects();
+      if (_levelCount == _currentLevel)
       {
-        Debug.Log("Win State: Level Completed");
-        _currentLevel++;
-        blocks.Clear();
-        DestroyAllExits();
-        LevelManager.Instance.ClearAllChildObjects();
-        if (_levelCount == _currentLevel)
-        {
-          GameUIController.instance.OnLoadEndGameScene();
-        }
-        else
-        {
-          GameUIController.instance.SetLevelText("Next Level: " + _currentLevel);
-          GameUIController.instance.OnOpenWinPanel();
-        }
+        GameUIController.instance.OnLoadEndGameScene();
+      }
+      else
+      {
+        GameUIController.instance.SetLevelText("Next Level: " + _currentLevel);
+        GameUIController.instance.OnOpenWinPanel();
       }
     }
 
@@ -148,14 +147,11 @@ namespace Core
       _levelCount = count;
     }
 
-    public void DestroyAllExits()
+    private void DestroyAllExits()
     {
-      foreach (Exit exit in exits)
+      foreach (Exit exit in exits.Where(exit => exit != null))
       {
-        if (exit != null)
-        {
-          Destroy(exit.gameObject);
-        }
+        Destroy(exit.gameObject);
       }
 
       exits.Clear();
