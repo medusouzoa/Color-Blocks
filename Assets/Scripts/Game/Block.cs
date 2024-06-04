@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Core;
 using Enum;
-using Level;
 using UnityEngine;
 
 namespace Game
@@ -17,6 +16,9 @@ namespace Game
     private Vector2 _startTouch, _swipeDelta;
     private Vector3 _targetPosition;
     private Vector3 _currentPosition;
+    private Vector3 _previousPosition;
+    private Vector3 _nearestPosition;
+
 
     private bool _isMoving;
     private bool _isDragging;
@@ -39,6 +41,8 @@ namespace Game
       _selectedBlock = null;
       _isDragging = false;
       _isMoving = false;
+      _nearestPosition = new Vector3();
+      _previousPosition = transform.position;
     }
 
     void Update()
@@ -48,6 +52,10 @@ namespace Game
       CheckSwipeMagnitude();
       HandleSwipeInputs();
       MoveBlock();
+      if (!_isMoving)
+      {
+        _previousPosition = transform.position;
+      }
     }
 
     public void InitializeBlock(List<int> directions, Color color,
@@ -235,10 +243,7 @@ namespace Game
       {
         transform.position = _targetPosition;
         Debug.Log("target Position: " + _targetPosition);
-        if (_currentPosition != _targetPosition)
-        {
-          GameManager.Instance.ReduceMove();
-        }
+
 
         StartMovement(_currentDirection);
       }
@@ -246,8 +251,6 @@ namespace Game
 
     private void ReturnToNearestIntegerPosition()
     {
-      Vector3 nearestPosition;
-
       if (blockLength == 2)
       {
         if (_moveDirections.Contains(Direction.Left) ||
@@ -258,7 +261,7 @@ namespace Game
           float xEnd = Mathf.Round(transform.position.x);
           Debug.Log("xEnd: " + xEnd);
           float y = Mathf.Round(transform.position.y);
-          nearestPosition = new Vector3((xStart + xEnd) / 2, y, transform.position.z);
+          _nearestPosition = new Vector3((xStart + xEnd) / 2, y, transform.position.z);
         }
         else if (_moveDirections.Contains(Direction.Up) ||
                  _moveDirections.Contains(Direction.Down))
@@ -266,23 +269,24 @@ namespace Game
           float yStart = Mathf.Round(transform.position.y);
           float yEnd = Mathf.Round(transform.position.y);
           float x = Mathf.Round(transform.position.x);
-          nearestPosition = new Vector3(x, (yStart + yEnd) / 2, transform.position.z);
+          _nearestPosition = new Vector3(x, (yStart + yEnd) / 2, transform.position.z);
         }
         else
         {
-          nearestPosition = new Vector3(Mathf.Round(transform.position.x),
+          _nearestPosition = new Vector3(Mathf.Round(transform.position.x),
             Mathf.Round(transform.position.y), transform.position.z);
         }
       }
       else
       {
-        nearestPosition = new Vector3(Mathf.Round(transform.position.x),
+        _nearestPosition = new Vector3(Mathf.Round(transform.position.x),
           Mathf.Round(transform.position.y), transform.position.z);
       }
 
-      transform.position = nearestPosition;
-      _targetPosition = nearestPosition;
-      Debug.Log("Returning to nearest position: " + nearestPosition);
+      transform.position = _nearestPosition;
+      _targetPosition = _nearestPosition;
+      GameManager.Instance.CheckGameState();
+      Debug.Log("Returning to nearest position: " + _nearestPosition);
     }
 
     private Vector3 GetDirectionVector(Direction direction)
@@ -357,25 +361,43 @@ namespace Game
         Debug.Log("Trigger collision with another block");
         _isMoving = false;
         ReturnToNearestIntegerPosition();
+        Debug.Log("previous Position: " + _previousPosition);
+        if (_nearestPosition != _previousPosition)
+        {
+          GameManager.Instance.ReduceMove();
+        }
       }
       else if (other.CompareTag("Gate"))
       {
         Exit exit = other.GetComponent<Exit>();
         if (blockColor == exit.gateColor)
         {
-          Debug.Log("Trigger collision with matching gate");
           // TriggerExplosion();
+          ReturnToNearestIntegerPosition();
+          Debug.Log("previous Position: " + _previousPosition);
           GameManager.Instance.RemoveBlocks(this);
-          GameManager.Instance.CheckGameState();
+          if (_nearestPosition != _previousPosition)
+          {
+            GameManager.Instance.ReduceMove();
+          }
+
           Destroy(gameObject);
         }
         else
         {
-          Debug.Log("Trigger collision with non-matching gate");
           _isMoving = false;
           ReturnToNearestIntegerPosition();
+          if (_nearestPosition != _previousPosition)
+          {
+            GameManager.Instance.ReduceMove();
+          }
         }
       }
+    }
+
+    private Vector3 RoundVector3(Vector3 vector)
+    {
+      return new Vector3(Mathf.Round(vector.x), Mathf.Round(vector.y), Mathf.Round(vector.z));
     }
   }
 }
