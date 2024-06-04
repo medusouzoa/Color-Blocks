@@ -1,13 +1,13 @@
-﻿using Level;
+﻿using System;
+using Enum;
 using UnityEngine;
 
 namespace ScriptableObjects
 {
-
   [CreateAssetMenu(fileName = "TextureMapping", menuName = "ScriptableObjects/TextureMapping", order = 1)]
   public class TextureMapping : ScriptableObject
   {
-    [System.Serializable]
+    [Serializable]
     public class ColorTexturePair
     {
       public int colorValue;

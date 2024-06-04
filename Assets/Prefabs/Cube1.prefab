@@ -99,6 +99,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockLength: 0
+  explosionPrefab: {fileID: 6383384036442998427, guid: 64d881535fc188245803f510371f8c3a, type: 3}
   position: {x: 0, y: 0, z: 0}
 --- !u!65 &1705284051384004834
 BoxCollider:

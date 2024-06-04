@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
-using Level;
-using TMPro;
+using Game;
+using UI;
 using UnityEngine;
 
-namespace Game
+namespace Core
 {
   public class GameManager : MonoBehaviour
   {
@@ -15,6 +14,7 @@ namespace Game
     private int _currentLevel = 1;
     private int _remainingMoves;
     public bool isGameOver;
+    private int _levelCount;
     public List<Block> blocks { get; private set; }
     public List<Exit> exits { get; private set; }
 
@@ -43,26 +43,26 @@ namespace Game
     {
       if (_remainingMoves == 0)
       {
-        UIController.instance.UpdateMoveText("");
+        GameUIController.instance.UpdateMoveText("");
       }
     }
 
     public void ReplayLevel()
     {
-      UIController.instance.OnReplayLevel();
+      GameUIController.instance.OnReplayLevel();
       LevelManager.Instance.LoadLevel(_currentLevel - 1);
     }
 
     public void SetMoveLimit(int moveLimit)
     {
       _remainingMoves = moveLimit;
-      UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+      GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
     }
 
     public void SetLevelNumber(int levelNumber)
     {
       _currentLevel = levelNumber;
-      UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+      GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
     }
 
 
@@ -71,39 +71,33 @@ namespace Game
       if (_remainingMoves > 0)
       {
         _remainingMoves--;
-        UIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+        GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
         CheckGameState();
         if (_remainingMoves == 0)
         {
+          CheckGameState();
           isGameOver = true;
-          // Handle game over or level restart logic here
-          LevelManager.Instance.ClearAllChildObjects();
           DestroyAllBlocks();
           DestroyAllExits();
-          UIController.instance.OnOpenGameOverPanel();
+          LevelManager.Instance.ClearAllChildObjects();
+          GameUIController.instance.OnOpenGameOverPanel();
           Debug.Log("No more moves left!");
         }
       }
-
-      LevelCompletionCheck();
+      else
+      {
+        CheckGameState();
+      }
     }
 
-    void CheckGameState()
+    public void CheckGameState()
     {
-      if (_remainingMoves <= 0)
-      {
-        isGameOver = true;
-        Debug.Log("Fail State: Out of Moves");
-        // Handle fail state
-      }
-
       if (blocks.Count == 0)
       {
         Debug.Log("Win State: Level Completed");
-        _currentLevel++;
         blocks.Clear();
         DestroyAllExits();
-        LevelManager.Instance.LoadLevel(_currentLevel - 1);
+        LevelCompletionCheck();
       }
     }
 
@@ -115,8 +109,23 @@ namespace Game
         _currentLevel++;
         blocks.Clear();
         DestroyAllExits();
-        LevelManager.Instance.LoadLevel(_currentLevel - 1);
+        LevelManager.Instance.ClearAllChildObjects();
+        if (_levelCount == _currentLevel)
+        {
+          GameUIController.instance.OnLoadEndGameScene();
+        }
+        else
+        {
+          GameUIController.instance.SetLevelText("Next Level: " + _currentLevel);
+          GameUIController.instance.OnOpenWinPanel();
+        }
       }
+    }
+
+    public void OnLoadNextLevel()
+    {
+      GameUIController.instance.OnOpenNextLevelPanel();
+      LevelManager.Instance.LoadLevel(_currentLevel - 1);
     }
 
     public void AddBlock(Block block)
@@ -132,6 +141,11 @@ namespace Game
     public void AddExit(Exit exit)
     {
       exits.Add(exit);
+    }
+
+    public void SetLevelCount(int count)
+    {
+      _levelCount = count;
     }
 
     public void DestroyAllExits()

@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using Enum;
+using UnityEngine;
 
-namespace Level
+namespace Game
 {
   public class Exit : MonoBehaviour
   {

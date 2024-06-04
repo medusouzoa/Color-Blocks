@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using CameraControl;
+using Enum;
 using Game;
+using Level;
 using Newtonsoft.Json;
 using ScriptableObjects;
 using UnityEngine;
 
-namespace Level
+namespace Core
 {
   public class LevelManager : MonoBehaviour
   {
@@ -17,7 +20,7 @@ namespace Level
     public TextureMapping textureMappingTwo;
     public Transform parent;
 
-    private Dictionary<int, Level> _levels;
+    private Dictionary<int, Level.Level> _levels;
 
     public int colSize { get; private set; }
     public int rowSize { get; private set; }
@@ -25,7 +28,7 @@ namespace Level
 
     private void Awake()
     {
-      _levels = new Dictionary<int, Level>();
+      _levels = new Dictionary<int, Level.Level>();
       if (Instance == null)
       {
         Instance = this;
@@ -39,6 +42,7 @@ namespace Level
     private void Start()
     {
       LoadLevel(0);
+      GameManager.Instance.SetLevelCount(levelFiles.Length + 1);
     }
 
     public void LoadLevel(int index)
@@ -48,16 +52,19 @@ namespace Level
         LoadLevelFile(index);
       }
 
-      Level level = _levels[index];
-      SetGridDimensions(level);
-      GenerateGrid();
-      CameraController.Instance.AdjustCameraSize();
+      if (index >= 0 && index < _levels.Count)
+      {
+        Level.Level level = _levels[index];
+        SetGridDimensions(level);
+        GenerateGrid();
+        CameraController.Instance.AdjustCameraSize();
 
-      LoadBlocks(level.movableInfo);
-      LoadExits(level.exitInfo);
+        LoadBlocks(level.movableInfo);
+        LoadExits(level.exitInfo);
 
-      GameManager.Instance.SetMoveLimit(level.moveLimit);
-      GameManager.Instance.SetLevelNumber(index + 1);
+        GameManager.Instance.SetMoveLimit(level.moveLimit);
+        GameManager.Instance.SetLevelNumber(index + 1);
+      }
     }
 
     private void LoadLevelFile(int index)
@@ -68,12 +75,12 @@ namespace Level
         return;
       }
 
-      Level level = JsonConvert.DeserializeObject<Level>(levelFiles[index].text);
+      Level.Level level = JsonConvert.DeserializeObject<Level.Level>(levelFiles[index].text);
       _levels[index] = level;
     }
 
 
-    private void SetGridDimensions(Level level)
+    private void SetGridDimensions(Level.Level level)
     {
       rowSize = level.rowCount;
       colSize = level.colCount;
@@ -229,6 +236,7 @@ namespace Level
 
       return Quaternion.identity;
     }
+
     public void ClearAllChildObjects()
     {
       foreach (Transform child in parent)
@@ -236,9 +244,10 @@ namespace Level
         Destroy(child.gameObject);
       }
     }
-    private Level GetLevel(int index)
+
+    private Level.Level GetLevel(int index)
     {
-      return _levels.TryGetValue(index, out Level level) ? level : null;
+      return _levels.TryGetValue(index, out Level.Level level) ? level : null;
     }
 
     private static Color GetColorFromInt(int color)

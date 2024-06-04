@@ -1,4 +1,4 @@
-﻿namespace Level
+﻿namespace Enum
 {
   public enum DoubleDirection
   {

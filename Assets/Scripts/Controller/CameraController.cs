@@ -1,11 +1,11 @@
-﻿using Level;
+﻿using Core;
 using UnityEngine;
 
-namespace Game
+namespace CameraControl
 {
   public class CameraController : MonoBehaviour
   {
-    private Camera _camera;
+    public UnityEngine.Camera mainCamera;
     public static CameraController Instance { get; private set; }
 
     private void Awake()
@@ -19,12 +19,6 @@ namespace Game
         Destroy(gameObject);
       }
     }
-
-    void Start()
-    {
-      _camera = GetComponent<Camera>();
-    }
-
     public void AdjustCameraSize()
     {
       float targetSize = LevelManager.Instance.colSize + LevelManager.Instance.rowSize;
@@ -32,7 +26,7 @@ namespace Game
 
       Vector3 newPosition = new(xPosition, transform.position.y, transform.position.z);
       transform.position = newPosition;
-      _camera.orthographicSize = targetSize;
+      mainCamera.orthographicSize = targetSize;
     }
   }
 }

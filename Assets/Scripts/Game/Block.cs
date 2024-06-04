@@ -1,33 +1,44 @@
 using System.Collections.Generic;
-using Game;
+using Core;
+using Enum;
+using Level;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-namespace Level
+namespace Game
 {
   public class Block : MonoBehaviour
   {
-    public Color blockColor { get; private set; }
-    public Texture colorTexture { get; set; }
+    public GameObject explosionPrefab;
+    private Rigidbody _rigidbody;
+
     public int blockLength;
-    private List<Direction> _moveDirections;
-    private readonly float _moveSpeed = 3.5f;
-    private Vector3 _targetPosition;
-    private bool _isMoving = false;
-    private bool _isDragging = false;
+    public float moveSpeed = 3.5f;
+
     private Vector2 _startTouch, _swipeDelta;
-    private static Block _selectedBlock = null;
+    private Vector3 _targetPosition;
+    private Vector3 _currentPosition;
+
+    private bool _isMoving;
+    private bool _isDragging;
     private static bool _swipeLeft, _swipeRight, _swipeUp, _swipeDown;
+    private Color blockColor { get; set; }
+    public Texture colorTexture { get; set; }
+    private List<Direction> _moveDirections;
     private Direction _currentDirection;
 
-    [FormerlySerializedAs("currentPosition")]
-    public Vector3 position;
-
-    private Rigidbody _rigidbody;
+    private static Block _selectedBlock;
 
     private void Awake()
     {
       _rigidbody = GetComponent<Rigidbody>();
+    }
+
+    private void Start()
+    {
+      _currentPosition = new Vector3();
+      _selectedBlock = null;
+      _isDragging = false;
+      _isMoving = false;
     }
 
     void Update()
@@ -52,7 +63,6 @@ namespace Level
       GetComponent<Renderer>().material.mainTexture = texture;
       _targetPosition = transform.position;
       blockLength = length;
-      position = currentPosition;
     }
 
     private void CalculateSwipeDelta()
@@ -191,7 +201,6 @@ namespace Level
     private void StartMovement(Direction direction)
     {
       _currentDirection = direction;
-      _isMoving = true;
 
       switch (direction)
       {
@@ -208,19 +217,29 @@ namespace Level
           _targetPosition = transform.position + Vector3.left;
           break;
       }
+
+      if (_targetPosition != transform.position)
+      {
+        _isMoving = true;
+      }
     }
 
     private void MoveBlock()
     {
       if (!_isMoving) return;
-
+      _currentPosition = transform.position;
       transform.position = Vector3.MoveTowards(transform.position,
-        _targetPosition, _moveSpeed * Time.deltaTime);
+        _targetPosition, moveSpeed * Time.deltaTime);
 
       if (Vector3.Distance(transform.position, _targetPosition) < 0.1f)
       {
         transform.position = _targetPosition;
         Debug.Log("target Position: " + _targetPosition);
+        if (_currentPosition != _targetPosition)
+        {
+          GameManager.Instance.ReduceMove();
+        }
+
         StartMovement(_currentDirection);
       }
     }
@@ -283,6 +302,41 @@ namespace Level
       }
     }
 
+    private void TriggerExplosion(Direction collisionDirection)
+    {
+      if (explosionPrefab != null)
+      {
+        GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+        ParticleSystem ps = explosion.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+          // Set the start color of the particle system to the block color
+          var mainModule = ps.main;
+          mainModule.startColor = blockColor;
+
+          // Rotate the particle system based on the collision direction
+          switch (collisionDirection)
+          {
+            case Direction.Up:
+              explosion.transform.rotation = Quaternion.Euler(0, 0, 0);
+              break;
+            case Direction.Right:
+              explosion.transform.rotation = Quaternion.Euler(0, 0, 90);
+              break;
+            case Direction.Down:
+              explosion.transform.rotation = Quaternion.Euler(0, 0, 180);
+              break;
+            case Direction.Left:
+              explosion.transform.rotation = Quaternion.Euler(0, 0, -90);
+              break;
+          }
+
+          ps.Play();
+          Destroy(explosion, ps.main.duration);
+        }
+      }
+    }
+
     private void Reset()
     {
       _startTouch = _swipeDelta = Vector2.zero;
@@ -303,7 +357,6 @@ namespace Level
         Debug.Log("Trigger collision with another block");
         _isMoving = false;
         ReturnToNearestIntegerPosition();
-        GameManager.Instance.ReduceMove();
       }
       else if (other.CompareTag("Gate"))
       {
@@ -311,8 +364,9 @@ namespace Level
         if (blockColor == exit.gateColor)
         {
           Debug.Log("Trigger collision with matching gate");
+          // TriggerExplosion();
           GameManager.Instance.RemoveBlocks(this);
-          GameManager.Instance.ReduceMove();
+          GameManager.Instance.CheckGameState();
           Destroy(gameObject);
         }
         else
@@ -320,7 +374,6 @@ namespace Level
           Debug.Log("Trigger collision with non-matching gate");
           _isMoving = false;
           ReturnToNearestIntegerPosition();
-          GameManager.Instance.ReduceMove();
         }
       }
     }

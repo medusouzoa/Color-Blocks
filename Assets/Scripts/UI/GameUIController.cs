@@ -1,20 +1,25 @@
 ﻿using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-namespace Game
+namespace UI
 {
-  public class UIController : MonoBehaviour
+  public class GameUIController : MonoBehaviour
   {
-    public static UIController instance;
+    public static GameUIController instance;
 
     [SerializeField]
     private GameObject inGamePanel;
+
+    [SerializeField]
+    private GameObject winPanel;
 
     [SerializeField]
     private GameObject gameOverPanel;
 
     public TextMeshProUGUI levelText;
     public TextMeshProUGUI movesText;
+    public TextMeshProUGUI nextLevelText;
 
     private void Start()
     {
@@ -42,10 +47,32 @@ namespace Game
       gameOverPanel.SetActive(true);
     }
 
+    public void OnOpenWinPanel()
+    {
+      inGamePanel.SetActive(false);
+      winPanel.SetActive(true);
+    }
+
+    public void SetLevelText(string level)
+    {
+      nextLevelText.text = level;
+    }
+
+    public void OnOpenNextLevelPanel()
+    {
+      inGamePanel.SetActive(true);
+      winPanel.SetActive(false);
+    }
+
     public void OnReplayLevel()
     {
       inGamePanel.SetActive(true);
       gameOverPanel.SetActive(false);
+    }
+
+    public void OnLoadEndGameScene()
+    {
+      SceneManager.LoadScene("Scenes/EndGameScene");
     }
 
     public void UpdateUI(int currentLevel, int remainingMoves)
