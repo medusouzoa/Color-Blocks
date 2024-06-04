@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Core;
 using Enum;
@@ -306,7 +307,7 @@ namespace Game
       }
     }
 
-    private void TriggerExplosion(Direction collisionDirection)
+    private IEnumerable TriggerExplosionCoroutine(Direction collisionDirection)
     {
       if (explosionPrefab != null)
       {
@@ -336,7 +337,8 @@ namespace Game
           }
 
           ps.Play();
-          Destroy(explosion, ps.main.duration);
+          yield return new WaitForSeconds(ps.main.duration); // Wait for particle duration
+          Destroy(explosion);
         }
       }
     }
@@ -351,6 +353,23 @@ namespace Game
     {
       _swipeLeft = _swipeRight = _swipeUp = _swipeDown = false;
     }
+
+    private void PlayExplosionAndWaitForFinish(Direction collisionDirection)
+    {
+      if (explosionPrefab != null)
+      {
+        GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+        ParticleSystem ps = explosion.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+          // ... existing code to set color and rotation ...
+
+          ps.Play();
+          Destroy(explosion);
+        }
+      }
+    }
+
 
     private void OnTriggerEnter(Collider other)
     {
@@ -393,11 +412,6 @@ namespace Game
           }
         }
       }
-    }
-
-    private Vector3 RoundVector3(Vector3 vector)
-    {
-      return new Vector3(Mathf.Round(vector.x), Mathf.Round(vector.y), Mathf.Round(vector.z));
     }
   }
 }
