@@ -2,11 +2,6 @@
 
 Color Blocks 3D is a puzzle game where players need to move colored blocks to matching gates to complete levels. This project implements the core gameplay mechanics using Unity.
 
-## Game Links
-To understand the mechanics and gameplay, you are advised to play the game for at least the first 20 levels. The game can be accessed via the following links:
-- [Color Blocks 3D on Android](https://play.google.com/store/apps/details?id=com.bonnie.colorblocks3d)
-- [Color Blocks 3D on iOS](https://apps.apple.com/tr/app/color-blocks-3d-slide-puzzle/id6451383609)
-
 ## Project Description
 
 Color Blocks 3D is a block puzzle game where players swipe to move blocks towards their corresponding gates. The game includes different levels with varying difficulties, and players must complete each level within a specified number of moves.
