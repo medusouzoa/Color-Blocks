@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Game;
@@ -19,6 +20,8 @@ namespace Core
     private List<Block> blocks { get; set; }
     private List<Exit> exits { get; set; }
 
+    public event Action<int> OnMovesUpdated;
+    public event Action<int> OnLevelUpdated;
 
     private void Awake()
     {
@@ -40,14 +43,6 @@ namespace Core
       isGameOver = false;
     }
 
-    private void Update()
-    {
-      if (_remainingMoves == 0)
-      {
-        GameUIController.instance.UpdateMoveText("");
-      }
-    }
-
     public void ReplayLevel()
     {
       GameUIController.instance.OnReplayLevel();
@@ -57,13 +52,13 @@ namespace Core
     public void SetMoveLimit(int moveLimit)
     {
       _remainingMoves = moveLimit;
-      GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+      OnMovesUpdated?.Invoke(_remainingMoves);
     }
 
     public void SetLevelNumber(int levelNumber)
     {
       _currentLevel = levelNumber;
-      GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+      OnLevelUpdated?.Invoke(_currentLevel);
     }
 
 
@@ -72,7 +67,7 @@ namespace Core
       if (_remainingMoves > 0)
       {
         _remainingMoves--;
-        GameUIController.instance.UpdateUI(_currentLevel, _remainingMoves);
+        OnMovesUpdated?.Invoke(_remainingMoves);
         CheckGameState();
         if (_remainingMoves == 0)
         {

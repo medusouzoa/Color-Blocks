@@ -16,9 +16,7 @@ namespace UI
 
     [SerializeField]
     private GameObject gameOverPanel;
-
-    public TextMeshProUGUI levelText;
-    public TextMeshProUGUI movesText;
+    
     public TextMeshProUGUI nextLevelText;
 
     private void Start()
@@ -73,17 +71,6 @@ namespace UI
     public void OnLoadEndGameScene()
     {
       SceneManager.LoadScene("Scenes/EndGameScene");
-    }
-
-    public void UpdateUI(int currentLevel, int remainingMoves)
-    {
-      levelText.text = "Level: " + currentLevel;
-      movesText.text = "Moves: " + remainingMoves;
-    }
-
-    public void UpdateMoveText(string move)
-    {
-      movesText.text = move;
     }
   }
 }
